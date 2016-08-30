@@ -342,7 +342,11 @@ namespace Sandbox.Engine.Networking
                 var localPreviewFileFullPath = Path.Combine(localFolder, previewFileName);
                 if (File.Exists(localPreviewFileFullPath))
                 {
-                    steamPreviewFileName = WriteAndShareFileBlocking(localPreviewFileFullPath);
+                    tempFileFullPath = Path.GetTempFileName();
+                    File.Copy(localPreviewFileFullPath, tempFileFullPath, true);
+                    steamPreviewFileName = WriteAndShareFileBlocking(tempFileFullPath);
+                    File.Delete(tempFileFullPath);
+
                     if (steamPreviewFileName == null)
                     {
                         MySandboxGame.Log.WriteLine(string.Format("Could not share preview file = '{0}'", localPreviewFileFullPath));
@@ -446,6 +450,11 @@ namespace Sandbox.Engine.Networking
 
             using (var fs = new FileStream(localFileFullPath, FileMode.Open, FileAccess.Read))
             {
+                if (steam.RemoteStorage.FileExists(steamFileName))
+                {
+                    var size = steam.RemoteStorage.GetFileSize(steamFileName);
+                    MySandboxGame.Log.WriteLine(string.Format("File already exists '{0}', size: {1}", steamFileName, size));
+                }
                 ulong handle = steam.RemoteStorage.FileWriteStreamOpen(steamFileName);
                 byte[] buffer = new byte[m_bufferSize];
                 int bytesRead = 0;
